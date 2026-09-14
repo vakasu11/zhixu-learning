@@ -1,6 +1,7 @@
 {
-  "name": "site-creator-vinext-starter",
+  "name": "zhixu-learning",
   "version": "0.1.0",
+  "description": "面向大学计算机核心课程的中文智能学习助手",
   "private": true,
   "engines": {
     "node": ">=22.13.0"
