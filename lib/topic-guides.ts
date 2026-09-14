@@ -1,4 +1,4 @@
-import type { Course, CourseId, DetailedAnswer } from "@/lib/study-content";
+import { COURSES, type Course, type CourseId, type DetailedAnswer } from "@/lib/study-content";
 
 type TopicFact = [definition: string, principle: string, application: string, pitfall: string];
 
@@ -93,6 +93,72 @@ const FACTS: Record<string, TopicFact> = {
   "假设检验": ["依据样本证据判断是否拒绝关于总体参数的原假设。", "先定 H0/H1 与显著性水平，再选统计量和拒绝域；p 值衡量 H0 下观察到同等或更极端结果的概率。", "用于比较均值、比例、分布和模型效果。", "未拒绝 H0 不等于证明 H0 正确，p 值也不是 H0 成立的概率。"],
 };
 
+const TOPIC_ALIASES: Record<string, string> = {
+  "递归函数": "递归分析",
+  "线性表抽象数据类型": "顺序表",
+  arrayList: "顺序表",
+  vector: "顺序表",
+  "单向链表": "链表",
+  "循环链表与头节点": "链表",
+  "双向链表": "链表",
+  "链表插入与删除": "链表",
+  "栈的抽象数据类型": "栈与队列",
+  "数组栈": "栈与队列",
+  "链式栈": "栈与队列",
+  "队列的抽象数据类型": "栈与队列",
+  "数组队列与循环队列": "栈与队列",
+  "链式队列": "栈与队列",
+  "散列函数与散列表": "哈希表",
+  "线性探查": "哈希表",
+  "链式散列": "哈希表",
+  "树的基本概念": "二叉树",
+  "二叉树的特性": "二叉树",
+  "二叉树的数组与链式描述": "二叉树",
+  "二叉树常用操作": "树的遍历",
+  "二叉树遍历": "树的遍历",
+  "大根堆": "堆与优先队列",
+  "堆的插入与删除": "堆与优先队列",
+  "堆的初始化": "堆与优先队列",
+  "堆排序": "堆与优先队列",
+  "优先级队列抽象数据类型": "堆与优先队列",
+  "图的基本概念": "图的存储",
+  "图的特性": "图的存储",
+  "无权图与加权图": "图的存储",
+  "邻接矩阵与邻接表": "图的存储",
+  "广度优先搜索 BFS": "DFS 与 BFS",
+  "深度优先搜索 DFS": "DFS 与 BFS",
+  "路径查找": "最短路径",
+  "生成树": "最小生成树",
+  "单源最短路径": "最短路径",
+  "最小成本生成树": "最小生成树",
+  "归并排序": "归并排序",
+  "快速排序": "快速排序",
+};
+
+const DATA_STRUCTURE_CHAPTER_GUIDES: Record<string, TopicFact> = {
+  "第1章 C++回顾": ["复习实现数据结构所需的 C++ 语言机制。", "重点是参数传递、动态内存、类、递归与模板容器之间的配合。", "为后续实现线性表、树、图和泛型算法准备代码基础。", "不要把语言语法当成数据结构本身；必须解释代码维护了什么结构不变量。"],
+  "第2章 程序性能分析": ["用空间和时间两个维度评价程序效率。", "先确定输入规模和基本操作，再统计操作次数随规模增长的规律。", "用于比较不同实现，并判断算法能否处理目标数据规模。", "一次实测耗时受机器影响，不能代替理论复杂度分析。"],
+  "第3章 渐近记法": ["用 O、Ω、Θ 和 o 等记号描述函数的渐近增长。", "常数和低阶项在规模充分大时不主导增长，但上下界和紧确界含义不同。", "用于统一表达循环、递归以及组合算法的复杂度。", "O 表示渐近上界，不自动等于最坏情况，也不一定是紧确界。"],
+  "第4章 性能测量": ["通过可重复实验观察程序在真实机器上的性能。", "控制实例规模、数据分布、重复次数与计时范围，并考虑缓存和编译优化。", "用于验证理论分析、寻找瓶颈并比较工程实现。", "只测一个输入或一次运行容易得到偶然且不可复现的结论。"],
+  "第5章 线性表—数组描述": ["在线性逻辑顺序上，用连续存储实现按位置访问。", "随机访问快，插入删除需搬移；动态数组通过容量增长换取均摊效率。", "适合索引访问频繁、元素局部性重要的序列。", "表长与容量不同，扩容会让旧地址、指针或迭代器失效。"],
+  "第6章 线性表—链式描述": ["用节点和链接表达线性次序，节点物理位置无需连续。", "已知位置时修改链接可常数时间插删，但定位位置仍需线性扫描。", "适合长度频繁变化，并能支撑桶排序、基数排序等应用。", "头尾、空表和单节点是最容易断链或形成野指针的边界。"],
+  "第7章 数组和矩阵": ["研究多维数组的地址映射以及特殊矩阵的压缩存储。", "根据下标到线性地址的映射，只保存非零或非重复元素以降低空间。", "用于科学计算、图表示和稀疏数据处理。", "压缩后不能再按普通二维数组公式访问，必须同步修改索引映射。"],
+  "第8章 栈": ["栈只允许在同一端插入和删除，遵循后进先出。", "受限操作使入栈、出栈和取栈顶可在常数时间完成。", "用于括号匹配、递归模拟、回溯、表达式与路径搜索。", "必须先判断空栈和满栈，递归调用栈也会占用空间。"],
+  "第9章 队列": ["队列从一端进入、另一端离开，遵循先进先出。", "循环数组通过取模复用空间，链式实现通过首尾指针保持常数时间操作。", "用于 BFS、任务调度、仿真、图元识别和布线。", "循环队列必须明确区分队空与队满，避免假溢出。"],
+  "第10章 跳表和散列": ["字典结构以关键字为索引支持查找、插入和删除。", "跳表通过随机层级加速有序搜索；散列表通过映射和冲突处理取得平均常数时间。", "用于符号表、索引、缓存、去重和文本压缩。", "散列表最坏情况仍可退化，性能依赖负载因子和冲突策略。"],
+  "第11章 二叉树和其他树": ["树表达层次关系，二叉树把每个节点的孩子数限制为至多两个。", "递归定义决定了递归存储、遍历和计算高度等操作的自然结构。", "用于搜索、表达式、编码、集合与层次模型。", "二叉树、完全二叉树和二叉搜索树是不同概念。"],
+  "第12章 优先级队列": ["优先级队列按优先级而非进入顺序删除元素。", "堆利用完全二叉树形状和局部堆序，以对数时间更新极值。", "用于调度、堆排序、霍夫曼编码和图算法。", "堆只保证父子之间的局部顺序，遍历结果并非整体有序。"],
+  "第13章 竞赛树": ["竞赛树通过逐层比较记录一组元素的优胜者或失败者。", "一次元素变化只需沿祖先路径重新比赛，适合反复选择极值。", "用于多路归并和装箱等需要连续选择的任务。", "赢者树与堆的存储含义不同，更新规则不能直接混用。"],
+  "第14章 搜索树": ["搜索树用关键字顺序组织节点以支持动态字典操作。", "二叉搜索树保持左小右大，操作时间取决于树高。", "用于有序集合、范围查询、索引和动态统计。", "普通 BST 可能退化为链，平均对数复杂度不代表最坏对数复杂度。"],
+  "第15章 平衡搜索树": ["通过额外约束控制搜索树高度，使操作保持稳定高效。", "AVL 严格控制高度差，红黑树用颜色规则近似平衡，B 树提高每个节点分支数。", "用于内存有序容器、数据库索引和文件系统。", "旋转或分裂后必须同时维护次序、父子关系及平衡信息。"],
+  "第16章 图": ["图用顶点与边表达任意多对多关系。", "存储密度决定邻接矩阵或邻接表；BFS 和 DFS 构成多数图算法的搜索骨架。", "用于路径、连通性、网络、依赖与生成树问题。", "有向、无向以及加权定义会改变度数、连通性和算法适用条件。"],
+  "第17章 贪婪算法": ["贪婪算法每一步选择当前看来最优的方案。", "只有具有贪婪选择性质和最优子结构时，局部最优才能导向全局最优。", "用于调度、装载、最短路径和最小生成树等问题。", "直觉上合理的贪婪策略不一定正确，必须给出交换论证或结构证明。"],
+  "第18章 分而治之": ["把原问题拆成相互独立的同类子问题，递归求解后合并。", "复杂度由子问题数量、规模与合并代价共同决定，可写成递归方程。", "用于归并排序、快速排序、选择和最近点对。", "子问题大量重叠时分治会重复计算，往往应改用动态规划。"],
+  "第19章 动态规划": ["把具有重叠子问题的最优化问题分解并保存子问题答案。", "先定义状态，再写转移、边界和计算顺序，最后由状态恢复答案。", "用于背包、矩阵链、最短路径与组合优化。", "状态遗漏必要信息会使转移不正确；只写递推式还不算完整算法。"],
+  "第20章 回溯法": ["在解空间树中深度优先尝试选择，发现不可行后撤销并换路。", "约束函数剪去不可行分支，限界函数可进一步剪去不可能改进的分支。", "用于装载、背包、最大团、旅行商和排列搜索。", "回溯最坏仍是指数级，剪枝正确性和选择顺序决定实际效率。"],
+  "第21章 分支定界": ["在解空间树中扩展最有希望的活节点，并用界淘汰不可能最优的分支。", "通常使用优先队列或队列管理活节点，界函数决定搜索顺序和剪枝强度。", "用于背包、旅行商、最大团和布局等离散优化问题。", "界必须安全：错误地低估或高估可能剪掉真正的最优解。"],
+};
+
 const METHODS: Record<CourseId, string> = {
   "data-structures": "先明确数据组织与操作目标，再写出不变量或递归含义，最后分析时间、空间和边界情况。",
   networks: "先判断协议所在层和它提供的服务，再按发送端、网络设备、接收端的顺序追踪报文与状态变化。",
@@ -102,7 +168,7 @@ const METHODS: Record<CourseId, string> = {
 };
 
 const PRACTICE: Record<CourseId, string> = {
-  "data-structures": "请写出该知识点最核心的数据结构或伪代码，并分析一个正常输入、一个边界输入的复杂度。",
+  "data-structures": "可选自测：请用自己的话解释该知识点的核心不变量，并指出一个关键操作的时间复杂度。",
   networks: "请画出相关层次、通信双方与关键报文字段，按时间顺序解释一次完整通信。",
   systems: "请从一行程序或一次访存出发，说明该知识点在软硬件系统中的位置和作用。",
   circuits: "请画一个最小典型电路，标明参考方向，列出方程并解释结果的正负和单位。",
@@ -114,7 +180,9 @@ export function getTopicDetail(course: Course, topic: string): DetailedAnswer {
   const chapterIndex = course.chapters.findIndex((chapter) => chapter.topics.includes(topic));
   const chapter = course.chapters[Math.max(0, chapterIndex)];
   const topicIndex = chapter?.topics.indexOf(topic) ?? 0;
-  const fact = FACTS[topic] ?? [`${topic}是《${course.name}》中需要理解定义、原理和应用边界的核心知识。`, METHODS[courseId], `它与“${chapter?.title ?? course.name}”中的其他概念共同构成完整知识链。`, "不要只记结论，要能说明成立条件、过程和边界。"];
+  const alias = TOPIC_ALIASES[topic] ?? topic;
+  const chapterGuide = DATA_STRUCTURE_CHAPTER_GUIDES[chapter?.title ?? ""];
+  const fact = FACTS[alias] ?? [`${topic}是“${chapter?.title ?? course.name}”中的核心学习单元。${chapterGuide?.[0] ?? "需要理解定义、原理和应用边界。"}`, chapterGuide?.[1] ?? METHODS[courseId], chapterGuide?.[2] ?? `它与“${chapter?.title ?? course.name}”中的其他概念共同构成完整知识链。`, chapterGuide?.[3] ?? "不要只记结论，要能说明成立条件、过程和边界。"];
   const previous = topicIndex > 0 ? chapter.topics[topicIndex - 1] : chapterIndex > 0 ? course.chapters[chapterIndex - 1].topics.at(-1) : "课程基础概念";
   const next = topicIndex < chapter.topics.length - 1 ? chapter.topics[topicIndex + 1] : chapterIndex < course.chapters.length - 1 ? course.chapters[chapterIndex + 1].topics[0] : "综合应用";
 
@@ -123,13 +191,14 @@ export function getTopicDetail(course: Course, topic: string): DetailedAnswer {
     course: course.name,
     summary: fact[0],
     sections: [
-      { heading: "1. 核心定义与学习目标", content: `${fact[0]}\n\n学完后应能：用自己的话准确解释概念；指出它解决的问题；在题目、代码、协议过程或公式中识别它。` },
-      { heading: "2. 关键原理与规律", content: fact[1] },
-      { heading: "3. 学习与解题步骤", content: `${METHODS[courseId]}\n\n针对“${topic}”，建议按“条件与对象 → 核心规则 → 过程或计算 → 结果检查”四步完成。` },
-      { heading: "4. 典型应用", content: fact[2] },
-      { heading: "5. 知识连接", content: `前置连接：${previous}。后续连接：${next}。它位于“${chapter?.title ?? course.name}”章节中，既要单独掌握，也要理解它与相邻知识点之间的输入、输出或因果关系。` },
+      { heading: "1. 教材定位与学习目标", content: `${chapter?.source ? `教材来源：${chapter.source}。` : `课程位置：${chapter?.title ?? course.name}。`}\n\n${fact[0]}\n\n学完后应能：用自己的话解释概念；写出核心操作或算法步骤；分析时间与空间复杂度；处理空结构、极端输入和失败条件。` },
+      { heading: "2. 核心定义", content: fact[0] },
+      { heading: "3. 关键原理与不变量", content: `${fact[1]}\n\n复习时不要只背结论，要指出操作前后始终保持的结构性质或算法不变量。` },
+      { heading: "4. C++ 实现与解题步骤", content: `${METHODS[courseId]}\n\n针对“${topic}”，建议按“数据对象与接口 → 存储表示 → 核心操作 → 边界处理 → 复杂度验证”五步整理；写代码时明确所有权、下标范围、空指针与递归出口。` },
+      { heading: "5. 复杂度与典型应用", content: `${fact[2]}\n\n分析时分别写出关键操作的最好、平均和最坏情况；若使用递归、辅助数组或动态节点，还要计入调用栈或额外存储。` },
+      { heading: "6. 前后知识连接", content: `前置连接：${previous}。后续连接：${next}。它位于“${chapter?.title ?? course.name}”中，既要单独掌握，也要能解释它为什么适合作为后续结构或算法的基础。` },
     ],
-    keyPoints: [fact[0], fact[1], `章节位置：${chapter?.title ?? course.name}`, `掌握标准：能解释、能判断、能完成一个典型应用。`],
+    keyPoints: [fact[0], fact[1], `章节位置：${chapter?.title ?? course.name}${chapter?.source ? `，${chapter.source}` : ""}`, "掌握标准：能解释、能画结构、能写核心步骤、能分析复杂度。"],
     mistake: fact[3],
     exercise: `${PRACTICE[courseId]}本题聚焦“${topic}”。`,
     answer: `参考作答框架：①写出“${topic}”的定义与适用条件；②说明关键规律：${fact[1]}；③结合一个典型场景说明：${fact[2]}；④最后检查是否出现这一易错点：${fact[3]}`,
@@ -137,6 +206,7 @@ export function getTopicDetail(course: Course, topic: string): DetailedAnswer {
       { label: "核心定义", items: [fact[0]] },
       { label: "关键原理", items: [fact[1]] },
       { label: "方法步骤", items: [METHODS[courseId]] },
+      { label: "教材位置", items: [chapter?.source ?? chapter?.title ?? course.name] },
       { label: "应用与易错", items: [fact[2], fact[3]] },
     ],
   };
@@ -146,5 +216,5 @@ export function findTopicDetail(courseId: CourseId, question: string) {
   const course = COURSES.find((item) => item.id === courseId) ?? COURSES[0];
   const normalized = question.toLowerCase();
   const topic = course.chapters.flatMap((chapter) => chapter.topics).find((item) => normalized.includes(item.toLowerCase()));
-  return topic ? getTopicDetail(courseId, topic) : null;
+  return topic ? getTopicDetail(course, topic) : null;
 }
