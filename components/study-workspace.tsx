@@ -19,6 +19,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Toaster } from "@/components/ui/sonner";
 import { buildDetailedAnswer, COURSES, type CourseId, type DetailedAnswer } from "@/lib/study-content";
 import { getTopicDetail } from "@/lib/topic-guides";
+import { downloadBrowserResource, listBrowserResources, saveBrowserResource } from "@/lib/browser-files";
 
 type View = "today" | "courses" | "map" | "assistant" | "plan" | "library";
 type Task = { id: number; courseId: CourseId; course: string; title: string; duration: number; kind: string; completed: boolean };
@@ -43,6 +44,9 @@ const navItems: { id: View; label: string; mobile: string; icon: typeof Home }[]
 
 const pageTitles: Record<View, string> = { today: "今日学习", courses: "我的课程", map: "知识导图", assistant: "AI 学习助手", plan: "学习计划", library: "资料库" };
 const masteryKey = (courseId: CourseId, topic: string) => `${courseId}:${topic}`;
+const STATIC_MODE = (import.meta as ImportMeta & { env?: Record<string, string> }).env?.VITE_STATIC_MODE === "true";
+const TASKS_STORAGE_KEY = "zhixu_tasks_v1";
+const MASTERY_STORAGE_KEY = "zhixu_mastery_v1";
 
 function Surface({ children, className = "" }: { children: ReactNode; className?: string }) {
   return <section className={`rounded-[22px] border border-border bg-card shadow-[0_12px_38px_rgba(27,48,41,.055)] ${className}`}>{children}</section>;
@@ -79,6 +83,16 @@ export function StudyWorkspace() {
   })) as Record<CourseId, number>, [masteryLevels]);
 
   useEffect(() => {
+    if (STATIC_MODE) {
+      try {
+        const savedTasks = JSON.parse(localStorage.getItem(TASKS_STORAGE_KEY) || "null");
+        const savedMastery = JSON.parse(localStorage.getItem(MASTERY_STORAGE_KEY) || "{}");
+        if (Array.isArray(savedTasks)) setTasks(savedTasks);
+        if (savedMastery && typeof savedMastery === "object") setMasteryLevels(savedMastery);
+      } catch { /* 损坏的浏览器数据会自动回退到零进度 */ }
+      void listBrowserResources().then((items) => setResources(items as ResourceItem[])).catch(() => undefined);
+      return;
+    }
     void (async () => {
       try {
         const studyData = await fetch("/api/study").then((response) => response.json());
@@ -112,6 +126,11 @@ export function StudyWorkspace() {
           throw new Error("任务信息无效：课程和标题必填，时长需为 5 到 240 分钟。");
         }
         const selected = COURSES.find((item) => item.id === input.courseId) ?? COURSES[0];
+        if (STATIC_MODE) {
+          const task: Task = { id: Date.now(), courseId: selected.id, course: selected.name, title: input.title.trim(), duration, kind: "学习", completed: false };
+          setTasks((current) => { const next = [...current, task]; localStorage.setItem(TASKS_STORAGE_KEY, JSON.stringify(next)); return next; });
+          return { id: task.id, title: task.title, saved: true };
+        }
         const response = await fetch("/api/study", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ courseId: selected.id, course: selected.name, title: input.title.trim(), duration, kind: "学习" }) });
         const data = await response.json();
         if (!response.ok) throw new Error(data.error || "任务创建失败");
@@ -126,7 +145,8 @@ export function StudyWorkspace() {
 
   async function toggleTask(task: Task) {
     const completed = !task.completed;
-    setTasks((current) => current.map((item) => item.id === task.id ? { ...item, completed } : item));
+    setTasks((current) => { const next = current.map((item) => item.id === task.id ? { ...item, completed } : item); if (STATIC_MODE) localStorage.setItem(TASKS_STORAGE_KEY, JSON.stringify(next)); return next; });
+    if (STATIC_MODE) { if (completed) toast.success("任务完成，已保存在当前浏览器"); return; }
     try {
       const response = await fetch("/api/study", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...task, completed }) });
       if (!response.ok) throw new Error();
@@ -141,6 +161,11 @@ export function StudyWorkspace() {
     if (!newTaskTitle.trim()) return;
     const selected = COURSES.find((item) => item.id === newTaskCourse)!;
     const fallback: Task = { id: Date.now(), courseId: selected.id, course: selected.name, title: newTaskTitle.trim(), duration: 30, kind: "学习", completed: false };
+    if (STATIC_MODE) {
+      setTasks((current) => { const next = [...current, fallback]; localStorage.setItem(TASKS_STORAGE_KEY, JSON.stringify(next)); return next; });
+      toast.success("学习任务已保存在当前浏览器");
+      setNewTaskTitle(""); setTaskDialog(false); return;
+    }
     try {
       const response = await fetch("/api/study", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(fallback) });
       const data = await response.json();
@@ -157,6 +182,7 @@ export function StudyWorkspace() {
   async function askAssistant(prompt = question, selectedCourse = courseId) {
     if (!prompt.trim()) return;
     setAnswerLoading(true); setQuestion(prompt); setCourseId(selectedCourse); setView("assistant");
+    if (STATIC_MODE) { setAnswer(buildDetailedAnswer(selectedCourse, prompt)); setAnswerLoading(false); return; }
     try {
       const response = await fetch("/api/assistant", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ courseId: selectedCourse, question: prompt }) });
       const data = await response.json();
@@ -169,7 +195,8 @@ export function StudyWorkspace() {
 
   async function updateMastery(level: number) {
     const key = masteryKey(courseId, selectedTopic);
-    setMasteryLevels((current) => ({ ...current, [key]: level }));
+    setMasteryLevels((current) => { const next = { ...current, [key]: level }; if (STATIC_MODE) localStorage.setItem(MASTERY_STORAGE_KEY, JSON.stringify(next)); return next; });
+    if (STATIC_MODE) { toast.success(level ? "已标记为掌握，并保存在当前浏览器" : "已取消掌握"); return; }
     try {
       await fetch("/api/mastery", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ courseId, topic: selectedTopic, level }) });
       toast.success(level ? "已标记为掌握" : "已取消掌握");
@@ -180,7 +207,18 @@ export function StudyWorkspace() {
     event.preventDefault();
     const file = fileInputRef.current?.files?.[0];
     if (!file) { toast.error("请先选择一个资料文件"); return; }
+    if (file.size > 20 * 1024 * 1024) { toast.error("单个文件不能超过 20MB"); return; }
     setUploading(true);
+    if (STATIC_MODE) {
+      try {
+        const resource = await saveBrowserResource(uploadCourse, file);
+        setResources((current) => [resource as ResourceItem, ...current]);
+        if (fileInputRef.current) fileInputRef.current.value = "";
+        toast.success("资料已保存在当前浏览器");
+      } catch { toast.error("浏览器没有足够空间保存该资料"); }
+      finally { setUploading(false); }
+      return;
+    }
     const data = new FormData(); data.set("file", file); data.set("courseId", uploadCourse);
     try {
       const response = await fetch("/api/resources", { method: "POST", body: data });
@@ -191,6 +229,12 @@ export function StudyWorkspace() {
       toast.success("资料已保存到当前设备的资料库");
     } catch (error) { toast.error(error instanceof Error ? error.message : "上传失败，请稍后重试"); }
     finally { setUploading(false); }
+  }
+
+  async function openResource(item: ResourceItem) {
+    if (!STATIC_MODE) return;
+    try { await downloadBrowserResource(item.id); }
+    catch { toast.error("资料无法读取，请重新上传"); }
   }
 
   return (
@@ -205,7 +249,7 @@ export function StudyWorkspace() {
           {view === "map" && <MapView courseId={courseId} selectedTopic={selectedTopic} mastery={masteryLevels} onCourse={setCourseId} onTopic={setSelectedTopic} onMastery={(level) => void updateMastery(level)} onAsk={(topic) => void askAssistant(`请详细讲解${topic}`, courseId)} />}
           {view === "assistant" && <AssistantView courseId={courseId} question={question} answer={answer} loading={answerLoading} onCourse={setCourseId} onQuestion={setQuestion} onAsk={(prompt) => void askAssistant(prompt, courseId)} />}
           {view === "plan" && <PlanView tasks={tasks} masteredCount={Object.values(masteryLevels).filter((level) => level > 0).length} onToggle={toggleTask} onAdd={() => setTaskDialog(true)} />}
-          {view === "library" && <LibraryView resources={resources} uploadCourse={uploadCourse} uploading={uploading} fileInputRef={fileInputRef} onCourse={setUploadCourse} onUpload={uploadResource} />}
+          {view === "library" && <LibraryView resources={resources} uploadCourse={uploadCourse} uploading={uploading} fileInputRef={fileInputRef} onCourse={setUploadCourse} onUpload={uploadResource} onOpen={(item) => void openResource(item)} />}
         </div>
       </section>
       <MobileNav view={view} onChange={changeView} />
@@ -311,8 +355,8 @@ function PlanView({ tasks, masteredCount, onToggle, onAdd }: { tasks: Task[]; ma
   return <div><div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end"><div><p className="text-sm font-medium text-[#537167]">按照节奏完成，而不是堆积任务</p><h1 className="mt-1 font-serif-cn text-3xl font-semibold">本周学习计划</h1></div><Button onClick={onAdd} className="w-fit rounded-xl bg-[#315f50]"><Plus className="size-4" />添加任务</Button></div><div className="mt-6 grid grid-cols-7 gap-1.5 sm:gap-3">{days.map((day, index) => <div key={day} className={`rounded-xl border py-3 text-center ${index === 6 ? "border-[#315f50] bg-[#e8f0ec]" : "border-border bg-white"}`}><p className="text-[11px] text-muted-foreground">周{day}</p><p className="mt-1 text-sm font-semibold">{7 + index}</p>{index === 6 && <span className="mx-auto mt-1.5 block size-1.5 rounded-full bg-[#315f50]" />}</div>)}</div><div className="mt-6 grid gap-5 xl:grid-cols-[minmax(0,1fr)_320px]"><Surface className="p-5 sm:p-6"><SectionHeading eyebrow="Today" title="今日安排" /><TaskList tasks={tasks} onToggle={onToggle} /></Surface><div className="space-y-5"><Surface className="p-5"><p className="text-sm font-semibold">本周目标</p><div className="mt-5 space-y-4">{[{label:"完成任务",value:`${tasks.filter((task) => task.completed).length}/${Math.max(tasks.length, 1)}`,progress: tasks.length ? tasks.filter((task) => task.completed).length / tasks.length * 100 : 0},{label:"专注时长",value:"0/8h",progress:0},{label:"掌握知识点",value:`${masteredCount}/84`,progress:masteredCount / 84 * 100}].map((item) => <div key={item.label}><div className="flex justify-between text-xs"><span className="text-muted-foreground">{item.label}</span><b>{item.value}</b></div><Progress value={item.progress} className="mt-2 h-1.5 [&>div]:bg-[#315f50]" /></div>)}</div></Surface><Surface className="bg-[#19352d] p-5 text-white"><CalendarDays className="size-5 text-[#d7f06a]" /><h3 className="mt-3 font-serif-cn text-lg font-semibold">按自己的节奏学习</h3><p className="mt-2 text-sm leading-6 text-white/60">任务与掌握状态会按当前设备独立保存，不会与其他访客混在一起。</p></Surface></div></div></div>;
 }
 
-function LibraryView({ resources, uploadCourse, uploading, fileInputRef, onCourse, onUpload }: { resources: ResourceItem[]; uploadCourse: CourseId; uploading: boolean; fileInputRef: React.RefObject<HTMLInputElement | null>; onCourse: (id: CourseId) => void; onUpload: (event: FormEvent<HTMLFormElement>) => void }) {
-  return <div><div><p className="text-sm font-medium text-[#537167]">把课件、讲义和题目放在一起</p><h1 className="mt-1 font-serif-cn text-3xl font-semibold">我的资料库</h1></div><div className="mt-6 grid gap-5 xl:grid-cols-[minmax(0,1fr)_360px]"><div className="space-y-5"><a href={cloudUrl} target="_blank" rel="noreferrer" className="flex items-center justify-between rounded-[22px] bg-[#19352d] p-5 text-white shadow-[0_18px_45px_rgba(20,40,35,.14)] transition hover:bg-[#21463b]"><div className="flex items-center gap-4"><span className="grid size-12 place-items-center rounded-2xl bg-white/10 text-[#d7f06a]"><Cloud className="size-6" /></span><div><p className="font-semibold">山大云盘 · 计科学术部</p><p className="mt-1 text-sm text-white/55">包含课程资料、电子电路技术基础和概率统计等目录</p></div></div><ArrowRight className="size-5" /></a><Surface className="p-5 sm:p-6"><SectionHeading eyebrow="My Files" title="当前设备的资料" /><div className="mt-5 space-y-3">{resources.length ? resources.map((item) => <article key={item.id} className="flex items-center gap-3 rounded-xl border border-border p-3"><span className="grid size-10 place-items-center rounded-xl bg-[#eef3f0] text-[#315f50]"><FileText className="size-5" /></span><div className="min-w-0 flex-1"><p className="truncate text-sm font-medium">{item.name}</p><p className="mt-1 text-xs text-muted-foreground">{COURSES.find((course) => course.id === item.courseId)?.short || "课程资料"} · {(item.size / 1024 / 1024).toFixed(1)} MB</p></div></article>) : <div className="rounded-2xl border border-dashed border-[#b9c8c1] bg-[#f7faf8] p-10 text-center"><Library className="mx-auto size-7 text-[#537167]" /><p className="mt-3 font-semibold">还没有上传资料</p><p className="mt-1 text-sm text-muted-foreground">上传后会按照课程自动归档。</p></div>}</div></Surface></div><Surface className="h-fit p-5 sm:p-6"><div className="flex items-center gap-3"><span className="grid size-10 place-items-center rounded-xl bg-[#e8f0ec] text-[#315f50]"><Upload className="size-5" /></span><div><h2 className="font-semibold">上传课程资料</h2><p className="text-xs text-muted-foreground">PDF、PPT、Word 或图片</p></div></div><form onSubmit={onUpload} className="mt-5 space-y-4"><div><label className="mb-2 block text-sm font-medium">所属课程</label><Select value={uploadCourse} onValueChange={(value) => onCourse(value as CourseId)}><SelectTrigger className="w-full rounded-xl"><SelectValue /></SelectTrigger><SelectContent>{COURSES.map((item) => <SelectItem key={item.id} value={item.id}>{item.name}</SelectItem>)}</SelectContent></Select></div><div><label className="mb-2 block text-sm font-medium">选择文件</label><Input ref={fileInputRef} type="file" accept=".pdf,.ppt,.pptx,.doc,.docx,.md,.txt,.png,.jpg,.jpeg" className="h-auto rounded-xl py-2.5" /></div><p className="text-xs leading-5 text-muted-foreground">文件与学习进度按当前设备独立保存，单个文件最大 20MB。</p><Button disabled={uploading} className="w-full rounded-xl bg-[#315f50]"><Paperclip className="size-4" />{uploading ? "正在保存…" : "保存到资料库"}</Button></form></Surface></div></div>;
+function LibraryView({ resources, uploadCourse, uploading, fileInputRef, onCourse, onUpload, onOpen }: { resources: ResourceItem[]; uploadCourse: CourseId; uploading: boolean; fileInputRef: React.RefObject<HTMLInputElement | null>; onCourse: (id: CourseId) => void; onUpload: (event: FormEvent<HTMLFormElement>) => void; onOpen: (item: ResourceItem) => void }) {
+  return <div><div><p className="text-sm font-medium text-[#537167]">把课件、讲义和题目放在一起</p><h1 className="mt-1 font-serif-cn text-3xl font-semibold">我的资料库</h1></div><div className="mt-6 grid gap-5 xl:grid-cols-[minmax(0,1fr)_360px]"><div className="space-y-5"><a href={cloudUrl} target="_blank" rel="noreferrer" className="flex items-center justify-between rounded-[22px] bg-[#19352d] p-5 text-white shadow-[0_18px_45px_rgba(20,40,35,.14)] transition hover:bg-[#21463b]"><div className="flex items-center gap-4"><span className="grid size-12 place-items-center rounded-2xl bg-white/10 text-[#d7f06a]"><Cloud className="size-6" /></span><div><p className="font-semibold">山大云盘 · 计科学术部</p><p className="mt-1 text-sm text-white/55">包含课程资料、电子电路技术基础和概率统计等目录</p></div></div><ArrowRight className="size-5" /></a><Surface className="p-5 sm:p-6"><SectionHeading eyebrow="My Files" title="当前设备的资料" /><div className="mt-5 space-y-3">{resources.length ? resources.map((item) => <button type="button" key={item.id} onClick={() => onOpen(item)} className="flex w-full items-center gap-3 rounded-xl border border-border p-3 text-left transition hover:border-[#8da399]"><span className="grid size-10 place-items-center rounded-xl bg-[#eef3f0] text-[#315f50]"><FileText className="size-5" /></span><div className="min-w-0 flex-1"><p className="truncate text-sm font-medium">{item.name}</p><p className="mt-1 text-xs text-muted-foreground">{COURSES.find((course) => course.id === item.courseId)?.short || "课程资料"} · {(item.size / 1024 / 1024).toFixed(1)} MB · 点击下载</p></div></button>) : <div className="rounded-2xl border border-dashed border-[#b9c8c1] bg-[#f7faf8] p-10 text-center"><Library className="mx-auto size-7 text-[#537167]" /><p className="mt-3 font-semibold">还没有上传资料</p><p className="mt-1 text-sm text-muted-foreground">上传后会按照课程自动归档。</p></div>}</div></Surface></div><Surface className="h-fit p-5 sm:p-6"><div className="flex items-center gap-3"><span className="grid size-10 place-items-center rounded-xl bg-[#e8f0ec] text-[#315f50]"><Upload className="size-5" /></span><div><h2 className="font-semibold">上传课程资料</h2><p className="text-xs text-muted-foreground">PDF、PPT、Word 或图片</p></div></div><form onSubmit={onUpload} className="mt-5 space-y-4"><div><label className="mb-2 block text-sm font-medium">所属课程</label><Select value={uploadCourse} onValueChange={(value) => onCourse(value as CourseId)}><SelectTrigger className="w-full rounded-xl"><SelectValue /></SelectTrigger><SelectContent>{COURSES.map((item) => <SelectItem key={item.id} value={item.id}>{item.name}</SelectItem>)}</SelectContent></Select></div><div><label className="mb-2 block text-sm font-medium">选择文件</label><Input ref={fileInputRef} type="file" accept=".pdf,.ppt,.pptx,.doc,.docx,.md,.txt,.png,.jpg,.jpeg" className="h-auto rounded-xl py-2.5" /></div><p className="text-xs leading-5 text-muted-foreground">文件与学习进度按当前设备独立保存，单个文件最大 20MB。</p><Button disabled={uploading} className="w-full rounded-xl bg-[#315f50]"><Paperclip className="size-4" />{uploading ? "正在保存…" : "保存到资料库"}</Button></form></Surface></div></div>;
 }
 
 function MobileNav({ view, onChange }: { view: View; onChange: (view: View) => void }) {
