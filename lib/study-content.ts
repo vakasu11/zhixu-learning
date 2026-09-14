@@ -1,3 +1,5 @@
+import { getTopicDetail } from "@/lib/topic-guides";
+
 export type CourseId = "data-structures" | "networks" | "systems" | "circuits" | "probability";
 
 export type Course = {
@@ -15,7 +17,7 @@ export type Course = {
 
 export const COURSES: Course[] = [
   {
-    id: "data-structures", name: "数据结构与算法", short: "数据结构", description: "理解数据的组织方式，掌握常用算法、复杂度分析与代码实现。", progress: 42, color: "#315f50", pale: "#e8f0ec", current: "树与二叉树",
+    id: "data-structures", name: "数据结构与算法", short: "数据结构", description: "理解数据的组织方式，掌握常用算法、复杂度分析与代码实现。", progress: 0, color: "#315f50", pale: "#e8f0ec", current: "从算法基础开始",
     chapters: [
       { title: "算法基础", topics: ["时间复杂度", "空间复杂度", "递归分析"] },
       { title: "线性结构", topics: ["顺序表", "链表", "栈与队列"] },
@@ -25,7 +27,7 @@ export const COURSES: Course[] = [
     ], quickQuestions: ["二叉树的三种遍历有什么区别？", "如何分析递归算法复杂度？", "Dijkstra 算法为什么不能处理负权边？"],
   },
   {
-    id: "networks", name: "计算机网络", short: "计算机网络", description: "从协议分层到端到端通信，理解数据如何在网络中可靠传输。", progress: 28, color: "#41647a", pale: "#eaf0f4", current: "TCP 可靠传输",
+    id: "networks", name: "计算机网络", short: "计算机网络", description: "从协议分层到端到端通信，理解数据如何在网络中可靠传输。", progress: 0, color: "#41647a", pale: "#eaf0f4", current: "从网络体系结构开始",
     chapters: [
       { title: "网络体系结构", topics: ["OSI 模型", "TCP/IP 模型", "封装与解封装"] },
       { title: "数据链路层", topics: ["差错检测", "以太网", "交换机", "ARP"] },
@@ -35,7 +37,7 @@ export const COURSES: Course[] = [
     ], quickQuestions: ["TCP 为什么需要三次握手？", "交换机和路由器有什么区别？", "一次网页请求经过了哪些协议？"],
   },
   {
-    id: "systems", name: "计算机系统导论", short: "系统导论", description: "从比特、指令到程序运行，建立软硬件协同的完整系统视角。", progress: 36, color: "#6b596f", pale: "#f0ebf1", current: "信息的表示与处理",
+    id: "systems", name: "计算机系统导论", short: "系统导论", description: "从比特、指令到程序运行，建立软硬件协同的完整系统视角。", progress: 0, color: "#6b596f", pale: "#f0ebf1", current: "从信息表示开始",
     chapters: [
       { title: "信息表示", topics: ["二进制", "整数表示", "浮点数", "字符编码"] },
       { title: "处理器", topics: ["指令系统", "数据通路", "流水线", "异常"] },
@@ -44,7 +46,7 @@ export const COURSES: Course[] = [
     ], quickQuestions: ["为什么计算机会出现浮点数误差？", "高速缓存为什么能提高性能？", "程序从源代码到运行经历了什么？"],
   },
   {
-    id: "circuits", name: "电路与电子技术基础", short: "电路基础", description: "掌握电路分析方法、基本元器件特性与模拟数字电路基础。", progress: 18, color: "#8c623f", pale: "#f4ede6", current: "直流电路分析",
+    id: "circuits", name: "电路与电子技术基础", short: "电路基础", description: "掌握电路分析方法、基本元器件特性与模拟数字电路基础。", progress: 0, color: "#8c623f", pale: "#f4ede6", current: "从电路基本量开始",
     chapters: [
       { title: "电路基本量", topics: ["电压与电流", "参考方向", "功率", "电源"] },
       { title: "电阻电路", topics: ["欧姆定律", "KCL", "KVL", "等效变换"] },
@@ -53,7 +55,7 @@ export const COURSES: Course[] = [
     ], quickQuestions: ["KCL 和 KVL 应该怎样列方程？", "戴维南等效电路怎么求？", "电容和电感的暂态过程如何理解？"],
   },
   {
-    id: "probability", name: "概率论与数理统计", short: "概率统计", description: "理解随机现象的数学规律，掌握分布、数字特征与统计推断。", progress: 31, color: "#776733", pale: "#f3f0e4", current: "随机变量及其分布",
+    id: "probability", name: "概率论与数理统计", short: "概率统计", description: "理解随机现象的数学规律，掌握分布、数字特征与统计推断。", progress: 0, color: "#776733", pale: "#f3f0e4", current: "从概率基础开始",
     chapters: [
       { title: "概率基础", topics: ["样本空间", "条件概率", "全概率公式", "贝叶斯公式"] },
       { title: "随机变量", topics: ["分布函数", "离散型分布", "连续型分布"] },
@@ -64,7 +66,17 @@ export const COURSES: Course[] = [
   },
 ];
 
-export type DetailedAnswer = { title: string; course: string; summary: string; sections: { heading: string; content: string }[]; keyPoints: string[]; mistake: string; exercise: string; answer: string };
+export type DetailedAnswer = {
+  title: string;
+  course: string;
+  summary: string;
+  sections: { heading: string; content: string }[];
+  keyPoints: string[];
+  mistake: string;
+  exercise: string;
+  answer: string;
+  mindMap?: { label: string; items: string[] }[];
+};
 
 const answers: Record<string, DetailedAnswer> = {
   tcp: { title: "TCP 为什么需要三次握手？", course: "计算机网络", summary: "三次握手的本质不是单纯“打招呼”，而是让通信双方确认彼此的发送和接收能力，并同步双方各自的初始序列号。", sections: [
@@ -106,6 +118,9 @@ export function buildDetailedAnswer(courseId: CourseId, question: string): Detai
   if (normalized.includes("缓存") || normalized.includes("cache") || normalized.includes("局部性")) return answers.cache;
   if (normalized.includes("kcl") || normalized.includes("kvl") || normalized.includes("基尔霍夫")) return answers.circuit;
   if (normalized.includes("贝叶斯") || normalized.includes("条件概率")) return answers.bayes;
+  const course = COURSES.find((item) => item.id === courseId) ?? COURSES[0];
+  const topic = course.chapters.flatMap((chapter) => chapter.topics).find((item) => normalized.includes(item.toLowerCase()));
+  if (topic) return getTopicDetail(course, topic);
   const fallback: Record<CourseId, string> = { "data-structures": "tree", networks: "tcp", systems: "cache", circuits: "circuit", probability: "bayes" };
   const base = answers[fallback[courseId]];
   return { ...base, title: question.trim() || base.title };

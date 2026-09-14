@@ -8,6 +8,13 @@
       "when": 1789311967786,
       "tag": "0000_dapper_sentry",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1789344000000,
+      "tag": "0001_anonymous_visitors",
+      "breakpoints": true
     }
   ]
 }
