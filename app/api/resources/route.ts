@@ -23,7 +23,7 @@ export async function POST(request: Request) {
     const file = data.get("file");
     const courseId = String(data.get("courseId") || "data-structures");
     if (!(file instanceof File)) return visitorJson(visitor, { error: "请选择文件" }, { status: 400 });
-    if (file.size > 20 * 1024 * 1024) return visitorJson(visitor, { error: "单个文件不能超过 20MB" }, { status: 400 });
+    if (file.size > 20 * 1024 * 1024) return visitorJson(visitor, { error: "单个文件不能超过 20 兆字节" }, { status: 400 });
     const storageKey = `${visitor.id}/${courseId}/${crypto.randomUUID()}-${file.name.replace(/[^\w.\-\u4e00-\u9fa5]/g, "-")}`;
     await env.BUCKET.put(storageKey, file.stream(), { httpMetadata: { contentType: file.type || "application/octet-stream" } });
     const [item] = await getDb().insert(resources).values({ visitorId: visitor.id, courseId, name: file.name, storageKey, contentType: file.type || "application/octet-stream", size: file.size }).returning();
