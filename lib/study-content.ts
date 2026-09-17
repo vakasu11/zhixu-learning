@@ -17,7 +17,7 @@ export type Course = {
 
 export const COURSES: Course[] = [
   {
-    id: "data-structures", name: "数据结构与算法", short: "数据结构", description: "以《数据结构、算法与应用（C++语言描述·第2版）》为主线，系统学习程序分析、数据结构与算法设计。", progress: 0, color: "#315f50", pale: "#e8f0ec", current: "从教材第1章开始",
+    id: "data-structures", name: "数据结构与算法", short: "数据结构", description: "以《数据结构、算法与应用（C++语言描述·第2版）》为主线，系统学习程序分析、数据结构与算法设计。", progress: 0, color: "#355f91", pale: "#e7eef8", current: "从教材第1章开始",
     chapters: [
       { title: "第1章 C++回顾", source: "PDF第19-54页（书中第2-37页）", topics: ["函数与参数", "异常处理", "动态内存分配", "自定义数据类型", "递归函数", "标准模板库 STL", "测试与调试"] },
       { title: "第2章 程序性能分析", source: "PDF第55-80页（书中第38-63页）", topics: ["程序性能", "空间复杂度", "时间复杂度", "操作计数", "最好、最坏与平均复杂度"] },
