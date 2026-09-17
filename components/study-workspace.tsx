@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } 
 import {
   ArrowLeft, ArrowRight, BookMarked, BookOpen, BrainCircuit, CalendarDays, CheckCircle2,
   ChevronRight, CircuitBoard, Clock3, Cloud, Code2, FileText, FolderOpen, Home, Library,
-  ListChecks, Menu, Network, Paperclip, Plus, Search, Send, Sparkles, Target,
+  Copy, ListChecks, Menu, Network, Paperclip, Plus, Search, Send, Sparkles, Target,
   Upload, Waypoints, X,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -21,6 +21,7 @@ import { buildDetailedAnswer, COURSES, type CourseId, type DetailedAnswer } from
 import { getTopicDetail } from "@/lib/topic-guides";
 import { DATA_STRUCTURE_COMPARISONS, DATA_STRUCTURE_REVIEWS } from "@/lib/data-structure-review";
 import { COURSE_MATERIAL_AUDITS, MATERIAL_ROLES, getCourseMaterialAudit } from "@/lib/course-materials";
+import { CODE_LIBRARY_CHAPTERS, DATA_STRUCTURE_CODE_LIBRARY, type CodePriority } from "@/lib/data-structure-code-library";
 import { downloadBrowserResource, listBrowserResources, saveBrowserResource } from "@/lib/browser-files";
 
 type View = "today" | "courses" | "map" | "assistant" | "plan" | "library";
@@ -302,13 +303,54 @@ function CoursesView({ courseId, progress, onCourse, onAsk, onTopic, onMap, onLi
   const materialAudit = getCourseMaterialAudit(courseId);
   return <div><div className="flex gap-2 overflow-x-auto pb-3 scrollbar-none">{COURSES.map((item) => <button key={item.id} onClick={() => onCourse(item.id)} className={`shrink-0 rounded-full border px-4 py-2 text-sm font-medium transition ${courseId === item.id ? "border-[#315f50] bg-[#315f50] text-white" : "border-border bg-white text-muted-foreground hover:text-foreground"}`}>{item.short}</button>)}</div>
     <Surface className="mt-4 overflow-hidden"><div className="relative p-6 sm:p-8" style={{ background: `linear-gradient(120deg, ${course.pale}, #ffffff 65%)` }}><div className="flex flex-col gap-5 sm:flex-row sm:items-center"><span className="grid size-14 shrink-0 place-items-center rounded-2xl bg-white shadow-sm" style={{ color: course.color }}><Icon className="size-7" /></span><div className="flex-1"><p className="text-sm font-medium" style={{ color: course.color }}>{progress[courseId] ? "继续学习" : "尚未开始"} · {course.current}</p><h1 className="mt-1 font-serif-cn text-2xl font-semibold sm:text-3xl">{course.name}</h1><p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">{course.description}</p></div><div className="w-full rounded-2xl bg-white/75 p-4 sm:w-48"><div className="flex justify-between text-xs"><span className="text-muted-foreground">已掌握知识点</span><b>{progress[courseId]}%</b></div><Progress value={progress[courseId]} className="mt-3 h-2 [&>div]:bg-[#315f50]" /></div></div></div>
-      <Tabs defaultValue="outline" className="p-5 sm:p-7"><TabsList variant="line" className="w-full justify-start overflow-x-auto"><TabsTrigger value="outline">知识目录</TabsTrigger><TabsTrigger value="review">章节速查</TabsTrigger><TabsTrigger value="practice">可选自测</TabsTrigger><TabsTrigger value="notes">学习笔记</TabsTrigger><TabsTrigger value="resources">课程资料</TabsTrigger></TabsList>
+      <Tabs defaultValue="outline" className="p-5 sm:p-7"><TabsList variant="line" className="w-full justify-start overflow-x-auto"><TabsTrigger value="outline">知识目录</TabsTrigger><TabsTrigger value="review">章节速查</TabsTrigger>{courseId === "data-structures" && <TabsTrigger value="code">代码复习库</TabsTrigger>}<TabsTrigger value="practice">可选自测</TabsTrigger><TabsTrigger value="notes">学习笔记</TabsTrigger><TabsTrigger value="resources">课程资料</TabsTrigger></TabsList>
         <TabsContent value="outline" className="mt-5"><div className="grid gap-3 md:grid-cols-2">{course.chapters.map((chapter, index) => <article key={chapter.title} className="rounded-2xl border border-border bg-[#fbfcfb] p-4"><div className="flex items-center gap-3"><span className="grid size-8 place-items-center rounded-lg bg-[#e8f0ec] text-xs font-bold text-[#315f50]">{String(index + 1).padStart(2, "0")}</span><h3 className="font-semibold">{chapter.title}</h3></div><div className="mt-3 flex flex-wrap gap-2">{chapter.topics.map((topic) => <button key={topic} onClick={() => onTopic(topic)} className="rounded-lg border border-border bg-white px-2.5 py-1.5 text-xs text-muted-foreground transition hover:border-[#8aa296] hover:text-[#315f50]">{topic}</button>)}</div></article>)}</div><div className="mt-5 flex flex-wrap gap-3"><Button onClick={onMap} className="rounded-xl bg-[#315f50]"><Waypoints className="size-4" />打开知识导图</Button><Button variant="outline" onClick={() => onAsk(course.quickQuestions[0])} className="rounded-xl"><Sparkles className="size-4" />智能讲解当前章节</Button></div></TabsContent>
         <TabsContent value="review" className="mt-5"><ChapterReviewView course={course} onTopic={onTopic} /></TabsContent>
+        {courseId === "data-structures" && <TabsContent value="code" className="mt-5"><CodeReviewLibrary /></TabsContent>}
         <TabsContent value="practice" className="mt-5"><article className="rounded-2xl border border-[#d9e3de] bg-[#f8fbf9] p-5 sm:p-6"><span className="grid size-10 place-items-center rounded-xl bg-[#e8f0ec] text-[#315f50]"><ListChecks className="size-5" /></span><h3 className="mt-4 font-semibold">练习不是主线</h3><p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">本项目以教材知识解析和思维导图为主。每个知识点底部只保留一道可选自测，用来确认是否真正理解；需要集中刷题时再单独增加。</p><Button onClick={onMap} variant="outline" size="sm" className="mt-4 rounded-lg"><Waypoints className="size-3.5" />返回知识解析</Button></article></TabsContent>
         <TabsContent value="notes" className="mt-5"><div className="rounded-2xl border border-dashed border-[#b9c8c1] bg-[#f7faf8] p-8 text-center"><BookMarked className="mx-auto size-7 text-[#537167]" /><h3 className="mt-3 font-semibold">记录自己的理解</h3><p className="mt-1 text-sm text-muted-foreground">学习时收藏的智能回答与笔记会集中在这里。</p><Button variant="outline" size="sm" className="mt-4">新建笔记</Button></div></TabsContent>
         <TabsContent value="resources" className="mt-5"><MaterialAuditView audit={materialAudit} onLibrary={onLibrary} /></TabsContent>
       </Tabs></Surface>
+  </div>;
+}
+
+function CodeReviewLibrary() {
+  const [query, setQuery] = useState("");
+  const [chapter, setChapter] = useState("all");
+  const [priority, setPriority] = useState<"all" | CodePriority>("all");
+  const filtered = useMemo(() => DATA_STRUCTURE_CODE_LIBRARY.filter((item) => {
+    const matchesChapter = chapter === "all" || item.chapter === Number(chapter);
+    const matchesPriority = priority === "all" || item.priority === priority;
+    const keyword = query.trim().toLowerCase();
+    const matchesQuery = !keyword || [item.title, item.purpose, item.invariant, item.complexity, ...item.pitfalls].join(" ").toLowerCase().includes(keyword);
+    return matchesChapter && matchesPriority && matchesQuery;
+  }), [chapter, priority, query]);
+  const priorityStyle: Record<CodePriority, string> = {
+    "必会": "bg-[#e5f1e9] text-[#315f50]",
+    "重点理解": "bg-[#f5edcf] text-[#79631d]",
+    "拓展": "bg-[#ececf5] text-[#5a5978]",
+  };
+
+  async function copyCode(code: string, title: string) {
+    try {
+      await navigator.clipboard.writeText(code);
+      toast.success(`已复制：${title}`);
+    } catch {
+      toast.error("当前浏览器不允许自动复制，请长按代码手动选择");
+    }
+  }
+
+  return <div>
+    <section className="rounded-2xl border border-[#d9e3de] bg-[#f8fbf9] p-5 sm:p-6">
+      <div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-start"><div><span className="inline-flex rounded-full bg-[#19352d] px-2.5 py-1 text-xs font-semibold text-[#d7f06a]">C++ 复习版</span><h3 className="mt-3 font-serif-cn text-xl font-semibold">21 章重要代码，一处集中复习</h3><p className="mt-2 max-w-3xl text-sm leading-7 text-muted-foreground">按教材和现有课件重新整理为简洁代码骨架。每段都配有用途、复杂度、循环不变量与易错点；重点是理解和默写核心逻辑，而不是背整份工程代码。</p></div><div className="grid shrink-0 grid-cols-2 gap-2 text-center"><div className="rounded-xl border border-border bg-white px-4 py-3"><b className="block text-xl text-[#315f50]">{DATA_STRUCTURE_CODE_LIBRARY.length}</b><span className="text-xs text-muted-foreground">代码专题</span></div><div className="rounded-xl border border-border bg-white px-4 py-3"><b className="block text-xl text-[#315f50]">21</b><span className="text-xs text-muted-foreground">教材章节</span></div></div></div>
+      <div className="mt-5 grid gap-3 md:grid-cols-[minmax(0,1fr)_180px_160px]"><label className="flex items-center gap-2 rounded-xl border border-border bg-white px-3"><Search className="size-4 shrink-0 text-muted-foreground" /><Input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="搜索：链表、排序、最短路径…" className="border-0 px-0 shadow-none focus-visible:ring-0" /></label><Select value={chapter} onValueChange={setChapter}><SelectTrigger className="w-full rounded-xl bg-white"><SelectValue placeholder="全部章节" /></SelectTrigger><SelectContent><SelectItem value="all">全部章节</SelectItem>{CODE_LIBRARY_CHAPTERS.map((item) => <SelectItem key={item} value={String(item)}>第 {item} 章</SelectItem>)}</SelectContent></Select><Select value={priority} onValueChange={(value) => setPriority(value as "all" | CodePriority)}><SelectTrigger className="w-full rounded-xl bg-white"><SelectValue placeholder="全部级别" /></SelectTrigger><SelectContent><SelectItem value="all">全部级别</SelectItem><SelectItem value="必会">必会</SelectItem><SelectItem value="重点理解">重点理解</SelectItem><SelectItem value="拓展">拓展</SelectItem></SelectContent></Select></div>
+    </section>
+    <div className="mt-4 flex items-center justify-between gap-3"><p className="text-sm text-muted-foreground">找到 <b className="text-foreground">{filtered.length}</b> 个代码专题</p><p className="hidden text-xs text-muted-foreground sm:block">建议顺序：先说出不变量 → 再默写 → 最后分析复杂度</p></div>
+    <div className="mt-3 space-y-3">{filtered.map((item) => <details key={item.id} className="group overflow-hidden rounded-2xl border border-border bg-white open:border-[#91a69c] open:shadow-[0_10px_28px_rgba(25,53,45,.06)]">
+      <summary className="cursor-pointer list-none p-4 sm:p-5"><div className="flex items-start justify-between gap-4"><div className="min-w-0"><div className="flex flex-wrap items-center gap-2"><span className="rounded-lg bg-[#eef3f0] px-2 py-1 text-[11px] font-bold text-[#45665b]">第 {item.chapter} 章</span><span className={`rounded-lg px-2 py-1 text-[11px] font-bold ${priorityStyle[item.priority]}`}>{item.priority}</span></div><h4 className="mt-2 font-semibold sm:text-[17px]">{item.title}</h4><p className="mt-2 text-sm leading-6 text-muted-foreground">{item.purpose}</p></div><ChevronRight className="mt-2 size-4 shrink-0 text-muted-foreground transition group-open:rotate-90" /></div></summary>
+      <div className="border-t border-border bg-[#fbfcfb] p-4 sm:p-5"><div className="grid gap-3 lg:grid-cols-2"><div className="rounded-xl border border-border bg-white p-4"><p className="text-xs font-semibold text-[#537167]">复杂度</p><p className="mt-2 text-sm leading-6">{item.complexity}</p></div><div className="rounded-xl border border-border bg-white p-4"><p className="text-xs font-semibold text-[#537167]">核心不变量</p><p className="mt-2 text-sm leading-6">{item.invariant}</p></div></div><div className="relative mt-3 overflow-hidden rounded-xl bg-[#152720] text-[#e8f2ed]"><div className="flex items-center justify-between border-b border-white/10 px-4 py-2.5"><span className="text-xs font-medium text-white/55">C++ · 复习骨架</span><button type="button" onClick={() => void copyCode(item.code, item.title)} className="flex items-center gap-1.5 rounded-lg px-2 py-1 text-xs text-white/65 transition hover:bg-white/10 hover:text-white"><Copy className="size-3.5" />复制</button></div><pre className="max-h-[520px] overflow-auto p-4 text-[12px] leading-6 sm:text-[13px]"><code>{item.code}</code></pre></div><div className="mt-3 rounded-xl border border-[#ead7c5] bg-[#fff7ef] p-4"><p className="text-xs font-semibold text-[#84552f]">易错点</p><ul className="mt-2 space-y-1.5">{item.pitfalls.map((pitfall) => <li key={pitfall} className="flex gap-2 text-sm leading-6 text-[#715b49]"><span className="mt-2 size-1.5 shrink-0 rounded-full bg-[#bd8150]" />{pitfall}</li>)}</ul></div></div>
+    </details>)}</div>
+    {!filtered.length && <div className="mt-3 rounded-2xl border border-dashed border-[#b9c8c1] bg-[#f7faf8] p-10 text-center"><Code2 className="mx-auto size-7 text-[#537167]" /><p className="mt-3 font-semibold">没有匹配的代码专题</p><button type="button" onClick={() => { setQuery(""); setChapter("all"); setPriority("all"); }} className="mt-2 text-sm font-medium text-[#315f50]">清除筛选</button></div>}
   </div>;
 }
 
