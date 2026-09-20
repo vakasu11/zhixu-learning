@@ -12,6 +12,8 @@
     "build": "node scripts/run-framework.mjs build",
     "build:github": "vite build --config vite.github.config.ts",
     "test:code-library": "node --experimental-strip-types --test tests/data-structure-code/*.test.ts",
+    "validate:code-library": "node --experimental-strip-types scripts/validate-data-structure-code.ts",
+    "verify:code-library": "npm run test:code-library && npm run validate:code-library && npm run build:github",
     "start": "node --import ./scripts/sites-env.mjs ./node_modules/wrangler/bin/wrangler.js dev --config dist/server/wrangler.json --local --persist-to .wrangler/state --ip 127.0.0.1 --inspector-port 0",
     "lint": "eslint . --ignore-pattern dist --ignore-pattern .next",
     "db:generate": "drizzle-kit generate"
