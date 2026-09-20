@@ -19,6 +19,8 @@ import { chapter18Code } from "./chapters/chapter-18.ts";
 import { chapter19Code } from "./chapters/chapter-19.ts";
 import { chapter20Code } from "./chapters/chapter-20.ts";
 import { chapter21Code } from "./chapters/chapter-21.ts";
+import { buildTopicCoverage } from "./coverage.ts";
+import { DATA_STRUCTURE_TOPIC_COUNT } from "./topic-catalog.ts";
 
 export type { CodePriority, CodeReviewItem, TextbookReference, TopicCoverage, TopicCoverageStatus } from "./types.ts";
 
@@ -53,3 +55,14 @@ export const CODE_LIBRARY_CHAPTERS = Array.from(
 export const CODE_LIBRARY_CATEGORIES = Array.from(
   new Set(DATA_STRUCTURE_CODE_LIBRARY.map((item) => item.category)),
 ).sort((a, b) => a.localeCompare(b, "zh-CN"));
+
+export const DATA_STRUCTURE_TOPIC_COVERAGE = buildTopicCoverage(DATA_STRUCTURE_CODE_LIBRARY);
+
+export const CODE_LIBRARY_STATS = {
+  totalChapters: CODE_LIBRARY_CHAPTERS.length,
+  totalCodeItems: DATA_STRUCTURE_CODE_LIBRARY.length,
+  totalTopics: DATA_STRUCTURE_TOPIC_COUNT,
+  accountedTopics: DATA_STRUCTURE_TOPIC_COVERAGE.length,
+  directTopics: DATA_STRUCTURE_TOPIC_COVERAGE.filter((item) => item.status === "code" || item.status === "experiment").length,
+  relatedTopics: DATA_STRUCTURE_TOPIC_COVERAGE.filter((item) => item.status === "related").length,
+};
