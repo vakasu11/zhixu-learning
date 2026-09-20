@@ -14,7 +14,7 @@ export const chapter05Code: CodeReviewItem[] = [
       "size 与 capacity 含义不同",
       "工程中优先 vector"
     ],
-    "code": "template<class T>\nvoid grow(T*& data, int size, int& capacity) {\n    int nextCapacity = max(1, capacity * 2);\n    T* next = new T[nextCapacity];\n    move(data, data + size, next);\n    delete[] data;\n    data = next;\n    capacity = nextCapacity;\n}",
+    "code": "#include <algorithm>\n#include <array>\n#include <cassert>\n#include <chrono>\n#include <cmath>\n#include <cstddef>\n#include <functional>\n#include <limits>\n#include <list>\n#include <map>\n#include <memory>\n#include <numeric>\n#include <optional>\n#include <queue>\n#include <random>\n#include <set>\n#include <stack>\n#include <stdexcept>\n#include <string>\n#include <tuple>\n#include <unordered_map>\n#include <utility>\n#include <vector>\nusing namespace std;\n\ntemplate<class T>\nvoid grow(T*& data, int size, int& capacity) {\n    int nextCapacity = max(1, capacity * 2);\n    T* next = new T[nextCapacity];\n    move(data, data + size, next);\n    delete[] data;\n    data = next;\n    capacity = nextCapacity;\n}",
     "category": "数组线性表",
     "topicIds": [
       "ch05-topic-03"
@@ -46,7 +46,7 @@ export const chapter05Code: CodeReviewItem[] = [
       "插入必须从尾部向右移动",
       "成功后再修改 size"
     ],
-    "code": "template<class T>\nvoid insertAt(T* a, int& size, int capacity, int index, const T& value) {\n    if (index < 0 || index > size || size == capacity) throw out_of_range(\"insert\");\n    move_backward(a + index, a + size, a + size + 1);\n    a[index] = value;\n    ++size;\n}\n\ntemplate<class T>\nvoid eraseAt(T* a, int& size, int index) {\n    if (index < 0 || index >= size) throw out_of_range(\"erase\");\n    move(a + index + 1, a + size, a + index);\n    --size;\n}",
+    "code": "#include <algorithm>\n#include <array>\n#include <cassert>\n#include <chrono>\n#include <cmath>\n#include <cstddef>\n#include <functional>\n#include <limits>\n#include <list>\n#include <map>\n#include <memory>\n#include <numeric>\n#include <optional>\n#include <queue>\n#include <random>\n#include <set>\n#include <stack>\n#include <stdexcept>\n#include <string>\n#include <tuple>\n#include <unordered_map>\n#include <utility>\n#include <vector>\nusing namespace std;\n\ntemplate<class T>\nvoid insertAt(T* a, int& size, int capacity, int index, const T& value) {\n    if (index < 0 || index > size || size == capacity) throw out_of_range(\"insert\");\n    move_backward(a + index, a + size, a + size + 1);\n    a[index] = value;\n    ++size;\n}\n\ntemplate<class T>\nvoid eraseAt(T* a, int& size, int index) {\n    if (index < 0 || index >= size) throw out_of_range(\"erase\");\n    move(a + index + 1, a + size, a + index);\n    --size;\n}",
     "category": "数组线性表",
     "topicIds": [
       "ch05-topic-04"
@@ -77,7 +77,7 @@ export const chapter05Code: CodeReviewItem[] = [
       "end 指向尾后位置，不能解引用",
       "扩容会使旧迭代器失效"
     ],
-    "code": "template<class T>\nclass ArrayIterator {\n    T* position;\npublic:\n    explicit ArrayIterator(T* p = nullptr) : position(p) {}\n    T& operator*() const { return *position; }\n    ArrayIterator& operator++() { ++position; return *this; }\n    bool operator!=(const ArrayIterator& other) const {\n        return position != other.position;\n    }\n};",
+    "code": "#include <algorithm>\n#include <array>\n#include <cassert>\n#include <chrono>\n#include <cmath>\n#include <cstddef>\n#include <functional>\n#include <limits>\n#include <list>\n#include <map>\n#include <memory>\n#include <numeric>\n#include <optional>\n#include <queue>\n#include <random>\n#include <set>\n#include <stack>\n#include <stdexcept>\n#include <string>\n#include <tuple>\n#include <unordered_map>\n#include <utility>\n#include <vector>\nusing namespace std;\n\ntemplate<class T>\nclass ArrayIterator {\n    T* position;\npublic:\n    explicit ArrayIterator(T* p = nullptr) : position(p) {}\n    T& operator*() const { return *position; }\n    ArrayIterator& operator++() { ++position; return *this; }\n    bool operator!=(const ArrayIterator& other) const {\n        return position != other.position;\n    }\n};",
     "category": "数组线性表",
     "topicIds": [
       "ch05-topic-05"
@@ -95,5 +95,69 @@ export const chapter05Code: CodeReviewItem[] = [
       "section": "C++ 迭代器",
       "pdfPages": "PDF第109-129页（书中第92-112页）"
     }
+  },
+  {
+    "id": "vector-operation-demo",
+    "chapter": 5,
+    "category": "数组线性表",
+    "title": "vector 操作：容量、插入与删除",
+    "priority": "必会",
+    "topicIds": [
+      "ch05-topic-01"
+    ],
+    "prerequisites": [
+      "数据对象与数据结构",
+      "对应章节的数据结构"
+    ],
+    "purpose": "掌握vector 操作：容量、插入与删除的状态表示、核心更新与边界处理。",
+    "steps": [
+      "确定“数据对象与数据结构”的输入与状态",
+      "执行vector 操作：容量、插入与删除的核心更新",
+      "检查边界条件并返回结果"
+    ],
+    "complexity": "复杂度由代码中的循环、递归深度或容器操作共同决定，复习时逐行计数。",
+    "invariant": "每次核心更新后，“数据对象与数据结构”的结构约束仍成立。",
+    "pitfalls": [
+      "先处理空输入与越界情况",
+      "更新多个指针或状态时保持顺序一致",
+      "不要把示例中的边界检查省略"
+    ],
+    "textbookRef": {
+      "section": "数据对象与数据结构",
+      "pdfPages": "PDF第109-129页（书中第92-112页）"
+    },
+    "code": "#include <algorithm>\n#include <array>\n#include <cassert>\n#include <chrono>\n#include <cmath>\n#include <cstddef>\n#include <functional>\n#include <limits>\n#include <list>\n#include <map>\n#include <memory>\n#include <numeric>\n#include <optional>\n#include <queue>\n#include <random>\n#include <set>\n#include <stack>\n#include <stdexcept>\n#include <string>\n#include <tuple>\n#include <unordered_map>\n#include <utility>\n#include <vector>\nusing namespace std;\n\nvector<int> editVector(vector<int> values, size_t position, int value) {\n    if (position > values.size()) throw out_of_range(\"position\");\n    values.insert(values.begin() + static_cast<ptrdiff_t>(position), value);\n    if (!values.empty()) values.erase(values.begin()); return values;\n}"
+  },
+  {
+    "id": "array-multiple-lists",
+    "chapter": 5,
+    "category": "数组线性表",
+    "title": "数组中的多重表：紧凑分段存储",
+    "priority": "必会",
+    "topicIds": [
+      "ch05-topic-02"
+    ],
+    "prerequisites": [
+      "线性表抽象数据类型",
+      "对应章节的数据结构"
+    ],
+    "purpose": "掌握数组中的多重表：紧凑分段存储的状态表示、核心更新与边界处理。",
+    "steps": [
+      "确定“线性表抽象数据类型”的输入与状态",
+      "执行数组中的多重表：紧凑分段存储的核心更新",
+      "检查边界条件并返回结果"
+    ],
+    "complexity": "复杂度由代码中的循环、递归深度或容器操作共同决定，复习时逐行计数。",
+    "invariant": "每次核心更新后，“线性表抽象数据类型”的结构约束仍成立。",
+    "pitfalls": [
+      "先处理空输入与越界情况",
+      "更新多个指针或状态时保持顺序一致",
+      "不要把示例中的边界检查省略"
+    ],
+    "textbookRef": {
+      "section": "线性表抽象数据类型",
+      "pdfPages": "PDF第109-129页（书中第92-112页）"
+    },
+    "code": "#include <algorithm>\n#include <array>\n#include <cassert>\n#include <chrono>\n#include <cmath>\n#include <cstddef>\n#include <functional>\n#include <limits>\n#include <list>\n#include <map>\n#include <memory>\n#include <numeric>\n#include <optional>\n#include <queue>\n#include <random>\n#include <set>\n#include <stack>\n#include <stdexcept>\n#include <string>\n#include <tuple>\n#include <unordered_map>\n#include <utility>\n#include <vector>\nusing namespace std;\n\nstruct PackedLists { vector<int> values; vector<size_t> offsets;\n    vector<int> list(size_t i) const { if(i+1>=offsets.size()) throw out_of_range(\"list\"); return {values.begin()+offsets[i], values.begin()+offsets[i+1]}; }\n};"
   }
 ];
