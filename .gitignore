@@ -47,4 +47,5 @@ next-env.d.ts
 /outputs/
 /work/
 /.planning/
+/.superpowers/
 *.tsbuildinfo
